@@ -1,0 +1,35 @@
+package com.redhat.database.benchmark;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+
+@RegisterRestClient(configKey = "process-api")
+public interface BenchmarkService {
+    @GET
+    @Path("/greeting")
+    String hello();
+
+    @POST
+    @Path("/orders")
+    @Consumes("application/json")
+    String newOrderItem(OrderItem orderItem);
+
+    @POST
+    @Path("/notPersistedProcess")
+    @Consumes("application/json")
+    String notPersistedProcess(OrderItem orderItem);
+
+    @POST
+    @Path("/simpleHT")
+    @Consumes("application/json")
+    String simpleHT(TestData testData);
+
+    @POST
+    @Path("/fruits")
+    @Consumes("application/json")
+    String restMongoFruit(RestMongoFruit fruit);
+}
