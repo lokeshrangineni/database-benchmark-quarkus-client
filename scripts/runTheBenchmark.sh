@@ -18,13 +18,13 @@ for USER in $NUMBER_OF_USERS; do
     ./delete-existing-collection.sh $MONGO_POD_NAME
 
     printf "\nTriggering the warm up benchmark in %s \n" $BENCHMARK_CLIENT_POD_NAME
-    printf "curl -X GET http://localhost:9090/benchmark/databaseWrite/20/100 \n"
+    printf "curl -X GET http://localhost:9090/benchmark/databaseWrite/20/30 \n"
     # Trigger the test request
-    oc exec $BENCHMARK_CLIENT_POD_NAME -- /bin/sh -c "curl -X GET http://localhost:9090/benchmark/databaseWrite/20/100"
+    oc exec $BENCHMARK_CLIENT_POD_NAME -- /bin/sh -c "curl -X GET http://localhost:9090/benchmark/databaseWrite/20/30"
 
      printf "\nTriggering the actual benchmark in %s \n" $BENCHMARK_CLIENT_POD_NAME
      printf "curl -X GET http://localhost:9090/benchmark/databaseWrite/30/%s \n" $USER
-     oc exec $BENCHMARK_CLIENT_POD_NAME -- /bin/sh -c "curl -X GET http://localhost:9090/benchmark/databaseWrite/30/$USER"
+     oc exec $BENCHMARK_CLIENT_POD_NAME -- /bin/sh -c "curl -X GET http://localhost:9090/benchmark/databaseWrite/120/$USER"
 
     echo "------------------------------------------"
 done
