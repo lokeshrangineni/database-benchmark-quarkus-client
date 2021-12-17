@@ -6,59 +6,74 @@
 * Internet access to download needed artifacts
 
 ## Design notes
-* Using [REST Easy](https://resteasy.github.io/) to define [BenchmarkService](src/main/java/com/redhat/database/benchmark/BenchmarkService.java)
-  interface that abstract the REST aspects as a regular Java interface  
-  * Configuration is defined in [application.properties](./src/main/resources/application.properties)
+ * Configuration is defined in [application.properties](./src/main/resources/application.properties)
 
-## Launching the application
+## Running the Database benchmark.
+
+### Launching the application
 ```shell
 mvn quarkus:dev
 ```
 
-### Configuring a different application deployment
-Edit [application.properties](./src/main/resources/application.properties) and change the value of:
-```properties
-process-api/mp-rest/url=http://localhost:8080
-```
-Given the hot deployment capabilities of Quarkus, there is no need to restart the application.
+### Running the application by connecting to Mongo on Openshift
 
-## Running the test
+```shell
+oc port-forward mongodb-benchmark-replica-set-0 34000:27017
+mongo mongodb://developer:password@localhost:34000
+```
+
+
+### Building docker image and publish to quay.io
+
+```shell
+//adding the jib library so that we can build the docker image.
+mvn quarkus:add-extension -Dextensions="container-image-jib"
+
+//building the app to create docker image.
+mvn clean package -Dquarkus.container-image.build=true
+
+docker image tag lrangine/database-benchmark-client:1.0.0-SNAPSHOT quay.io/lrangine/database-benchmark-client:2.0.0-SNAPSHOT
+docker image push quay.io/lrangine/database-benchmark-client:2.0.0-SNAPSHOT
+```
+
+### Running the benchmark
+
 The client application exposes an API that can be used to start the test:
 ```properties
 http://localhost:9090/benchmark/TYPE/DURATION/THREADS
 ```
 Where:
-* TYPE can be any of: 
-  * `hello`: triggers the `greeting` endpoint of the remote Kogito application
-  * `notPersisted`: triggers the `notPersistedProcess` in the remote Kogito application
-  * `orders` (default): triggers the `orders` in the remote Kogito application
-  * `simple`: triggers the `simpleHT` in the remote Kogito application
+* TYPE can be any of:
+  * `databaseWrite`: Does write to the database mentioned as part of the JDBC URL. At this moment only mongo supported. 
+  * `databaseRead`: Does read to the database mentioned as part of the JDBC URL. At this moment only mongo supported and reads the record with ID=1.
 * DURATION is the duration in seconds of the test
 * THREADS is the number of parallel threads to spawn
 
+
+
 Examples:
 ```shell
-curl -X GET http://localhost:9090/benchmark/notPersisted/300/1
+ curl -X GET http://localhost:9090/benchmark/databaseWrite/120/3
 ```
 Result is in JSON format:
 ```json
 {
-  "noOfExecutions" : 112425,
+  "noOfExecutions" : 34135,
   "noOfFailures" : 0,
   "minResponseTime" : {
-    "index" : 1439,
+    "index" : 615,
     "responseTime" : 1
   },
   "maxResponseTime" : {
-    "index" : 39019,
-    "responseTime" : 566
+    "index" : 9144,
+    "responseTime" : 80
   },
   "averageResponseTime" : 2,
-  "percentile95" : 4,
-  "percentile99" : 8,
-  "totalTimeMillis" : 256618,
-  "elapsedTimeMillis" : 300005,
-  "requestsPerSecond" : 374.0
+  "percentile95" : 3,
+  "percentile99" : 4,
+  "totalTimeMillis" : 74882,
+  "elapsedTimeMillis" : 30010,
+  "requestsPerSecond" : 1137.0
 }
 ```
 **Note** The `index` attribute in `minResponseTime` and `maxResponseTime` respresent the (first) index of the request 

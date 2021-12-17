@@ -3,6 +3,8 @@ package com.redhat.database.benchmark;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.redhat.database.benchmark.mongo.crud.Fruit;
+import com.redhat.database.benchmark.mongo.crud.FruitService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -25,16 +27,13 @@ import java.util.stream.IntStream;
 @ApplicationScoped
 public class BenchmarkRunner {
     private Logger logger = LoggerFactory.getLogger(BenchmarkRunner.class);
-    @ConfigProperty(name = "process-api/mp-rest/url")
-    private String serverUrl;
 
-    @RestClient
     @Inject
-    private BenchmarkService benchmarkService;
+    private FruitService fruitService;
 
-    public String run(String testType, int noOfTests, int noOfThreads) throws JsonProcessingException,
+    public String run(String testType, int durationInSeconds, int noOfThreads) throws JsonProcessingException,
             InterruptedException {
-        TestMetrics metrics = new Worker(testType, noOfTests, noOfThreads).run();
+        TestMetrics metrics = new Worker(testType, durationInSeconds, noOfThreads).run();
         return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(metrics);
     }
 
@@ -55,7 +54,7 @@ public class BenchmarkRunner {
         }
 
         private TestMetrics run() throws InterruptedException {
-            logger.info("Ready to run from {}: {} seconds of type '{}' in {} threads", serverUrl, durationInSeconds,
+            logger.info("Ready to run for {} seconds of type '{}' in {} threads", durationInSeconds,
                     testType,
                     noOfThreads);
             ExecutorService executor = Executors.newFixedThreadPool(noOfThreads);
@@ -96,73 +95,40 @@ public class BenchmarkRunner {
             };
         }
 
-        private RestExecutor executorOfType() {
-            RestExecutor result = null;
+        private DatabaseOperation executorOfType() {
+            DatabaseOperation dbOperation = null;
             switch (testType) {
-                case "hello":
-                    result = hello;
+                case "databaseRead":
+                    dbOperation = mongoReadOperation;
                     break;
-                case "notPersisted":
-                    result = notPersistedProcess;
+                case "databaseWrite":
+                    dbOperation = mongoWriteOperation;
                     break;
-
-                case "simple":
-                    result = simpleHT;
-                    break;
-
-                case "fruits":
-                    result = restMongoFruit;
-                    break;
-
-                default:
-                    result = newOrder;
             }
-            logger.info("Executor Type, RestExecutor: {},{}", testType, result);
-            return result;
+            logger.info("Executor Type, DatabaseOperation: {},{}", testType, dbOperation);
+            return dbOperation;
         }
 
-        private Supplier<OrderItem> newOrderItem = () -> {
-            OrderItem orderItem = new OrderItem();
-            orderItem.id = itemsCounter.get();
-            orderItem.approver = "john - " + orderItem.id;
-            orderItem.order = new OrderItem.Order();
-            orderItem.order.orderNumber = "12345";
-            orderItem.order.shipped = false;
-            return orderItem;
+        private Supplier<Fruit> restMongoFruitData = () -> {
+            Fruit fruit = new Fruit();
+            fruit.setName("Apple");
+            fruit.setDescription("Daily an apple keeps doctor away..!!");
+            return fruit;
         };
 
-        private Supplier<TestData> newTestData = () -> {
-            TestData.Data data = new TestData.Data();
-            data.testIndex = itemsCounter.get();
-            data.name = "John Doe";
-            TestData testData = new TestData();
-            testData.data = data;
-            return testData;
+        private Supplier<String> mongoGetData = () -> {
+            return "1";
         };
 
-        private Supplier<RestMongoFruit> restMongoFruitData = () -> {
-            RestMongoFruit data = new RestMongoFruit();
-            data.name = "Apple";
-            data.description = "Daily an apple keeps doctor away..!!";
-            return data;
-        };
+        private final DatabaseOperation mongoWriteOperation = () -> fruitService.add(restMongoFruitData.get());
 
+        private final DatabaseOperation mongoReadOperation = () -> fruitService.get(mongoGetData.get());
 
-        private final RestExecutor hello = () ->
-                benchmarkService.hello();
-        private final RestExecutor newOrder = () ->
-                benchmarkService.newOrderItem(newOrderItem.get());
-        private final RestExecutor notPersistedProcess = () ->
-                benchmarkService.notPersistedProcess(newOrderItem.get());
-        private final RestExecutor simpleHT = () ->
-                benchmarkService.simpleHT(newTestData.get());
-        private final RestExecutor restMongoFruit = () ->
-                benchmarkService.restMongoFruit(restMongoFruitData.get());
     }
+
 
     @FunctionalInterface
-    interface RestExecutor {
-        String execute() throws Exception;
+    interface DatabaseOperation {
+        Fruit execute() throws Exception;
     }
-
 }

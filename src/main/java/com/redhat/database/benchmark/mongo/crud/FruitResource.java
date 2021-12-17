@@ -13,11 +13,6 @@ public class FruitResource {
     @Inject
     FruitService fruitService;
 
-    @GET
-    public List<Fruit> list() {
-        return fruitService.list();
-    }
-
     @POST
     public void add(Fruit fruit) {
         fruitService.add(fruit);
