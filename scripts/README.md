@@ -1,4 +1,4 @@
-# Running Benchmark for multiple users.
+# Running Database Benchmark for multiple users.
 
 [runTheBenchmark.sh](./runTheBenchmark.sh) - This will let you run the benchmark client for multiple users in sequential way. You can modify the NUMBER_OF_USERS parameter (inside script) in case if we need to change it.
 

@@ -1,4 +1,4 @@
-# Running Java Quarkus Benchmark Client on the Open Shift
+# Running Database Benchmark Quarkus(Java) Client on the Open Shift
 
 **Step 1:** Building docker image and publish to quay.io
 
