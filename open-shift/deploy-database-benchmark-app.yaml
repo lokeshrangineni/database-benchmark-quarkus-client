@@ -20,11 +20,11 @@ spec:
           imagePullPolicy: Always
           resources:
             limits:
-              cpu: "500m"
-              memory: 500Mi
+              cpu: "2"
+              memory: 2000Mi
             requests:
-              cpu: "500m"
-              memory: 500Mi
+              cpu: "1.8"
+              memory: 1800Mi
           env:
             - name: MIN_POOL
               value: "10"
